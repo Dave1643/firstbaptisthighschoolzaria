@@ -10,16 +10,40 @@
   <div class="auth-container">
     <div class="auth-box">
       <h2>Sign Up</h2>
-      <form action="index.html?page=blog" method="get">
-        <input type="text" placeholder="Full Name" required>
-        <input type="email" placeholder="Email" required>
-        <input type="password" placeholder="Password" required>
+      <form id="signupForm">
+        <input type="text" id="signupName" placeholder="Full Name" required>
+        <input type="email" id="signupEmail" placeholder="Email" required>
+        <input type="password" id="signupPassword" placeholder="Password" required>
         <button type="submit">Create Account</button>
+
         <!-- Cancel Button -->
         <button type="button" class="cancel-btn" onclick="window.location.href='index.html'">Cancel</button>
       </form>
       <p>Already have an account? <a href="login.html">Login</a></p>
     </div>
   </div>
+
+  <script>
+    // Handle signup
+    document.getElementById('signupForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const name = document.getElementById('signupName').value;
+      const email = document.getElementById('signupEmail').value;
+      const password = document.getElementById('signupPassword').value;
+
+      if (name && email && password) {
+        // Save user info (just for demo purposes)
+        localStorage.setItem('loggedIn', 'true');
+        localStorage.setItem('userName', name);
+        localStorage.setItem('userEmail', email);
+
+        // Redirect to blog page
+        window.location.href = 'blog.html';
+      } else {
+        alert('Please fill in all fields');
+      }
+    });
+  </script>
 </body>
 </html>
