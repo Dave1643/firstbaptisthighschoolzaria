@@ -18,7 +18,6 @@
       background: #f4f6f9;
     }
 
-    /* Sidebar */
     .sidebar {
       width: 250px;
       background: #2c3e50;
@@ -43,13 +42,13 @@
       background: #34495e;
       border-radius: 5px;
       transition: 0.3s;
+      cursor: pointer;
     }
 
     .sidebar a:hover {
       background: #1abc9c;
     }
 
-    /* Main content */
     .main {
       flex: 1;
       padding: 20px;
@@ -64,7 +63,7 @@
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      max-width: 500px;
+      max-width: 600px;
     }
 
     .form-section h2 {
@@ -95,7 +94,6 @@
       background: #fff;
       padding: 15px;
       border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
 
     .data-list h3 {
@@ -108,11 +106,11 @@
     }
 
     table, th, td {
-      border: 1px solid #ccc;
+      border: 1px solid #ddd; 
     }
 
     th, td {
-      padding: 10px;
+      padding: 12px;
       text-align: left;
     }
 
@@ -121,25 +119,32 @@
     }
 
     @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+      }
       .sidebar {
-        width: 200px;
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        justify-content: space-around;
+      }
+      .sidebar h2 {
+        display: none;
       }
     }
   </style>
 </head>
 <body>
-  <!-- Sidebar Navigation -->
   <div class="sidebar">
     <h2>Admin Dashboard</h2>
-    <a href="#" onclick="showSection('students')">Add Student</a>
-    <a href="#" onclick="showSection('classes')">Add Class</a>
-    <a href="#" onclick="showSection('subjects')">Add Subject</a>
+    <a onclick="showSection('students')">Students</a>
+    <a onclick="showSection('classes')">Classes</a>
+    <a onclick="showSection('subjects')">Subjects</a>
   </div>
 
   <div class="main">
-    <h1>Dashboard</h1>
+    <h1>Dashboard Management</h1>
 
-    
     <div id="students" class="form-section">
       <h2>Add Student</h2>
       <input type="text" id="studentName" placeholder="Enter Student Name">
@@ -162,10 +167,9 @@
       </div>
     </div>
 
-    
     <div id="classes" class="form-section" style="display:none;">
       <h2>Add Class</h2>
-      <input type="text" id="className" placeholder="Enter Class Name">
+      <input type="text" id="className" placeholder="Enter Class Name (e.g., Grade 5)">
       <button onclick="addClass()">Add Class</button>
       
       <div class="data-list">
@@ -181,10 +185,9 @@
       </div>
     </div>
 
-    <!-- Add Subject Section -->
     <div id="subjects" class="form-section" style="display:none;">
       <h2>Add Subject</h2>
-      <input type="text" id="subjectName" placeholder="Enter Subject Name">
+      <input type="text" id="subjectName" placeholder="Enter Subject Name (e.g., Mathematics)">
       <button onclick="addSubject()">Add Subject</button>
       
       <div class="data-list">
@@ -201,90 +204,144 @@
     </div>
   </div>
 
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
   <script>
-    // Load data from localStorage
-    let students = JSON.parse(localStorage.getItem('students')) || [];
-    let classes = JSON.parse(localStorage.getItem('classes')) || [];
-    let subjects = JSON.parse(localStorage.getItem('subjects')) || [];
 
-    function showSection(section) {
-      document.querySelectorAll('.form-section').forEach(div => div.style.display = 'none');
-      document.getElementById(section).style.display = 'block';
+    const firebaseConfig = {
+      apiKey: "",
+      authDomain: "",
+      databaseURL: "",
+      projectId: "",
+      storageBucket: "",
+      messagingSenderId: "",
+      appId: ""
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    function showSection(sectionId) {
+        const sections = document.querySelectorAll('.form-section');
+        sections.forEach(section => {
+            section.style.display = 'none';
+        });
+        document.getElementById(sectionId).style.display = 'block';
     }
 
-    // Add Class
     function addClass() {
-      const className = document.getElementById('className').value;
-      if (className.trim() === '') return alert('Please enter a class name');
-      classes.push(className);
-      localStorage.setItem('classes', JSON.stringify(classes));
-      document.getElementById('className').value = '';
-      loadClasses();
-      alert('Class added successfully!');
+        const classNameInput = document.getElementById('className');
+        const className = classNameInput.value.trim();
+        if (className) {
+            database.ref('classes').push({
+                name: className
+            });
+            classNameInput.value = ''; 
+        } else {
+            alert('Please enter a class name.');
+        }
     }
 
-    // Add Subject
+    function displayClasses() {
+        const classTableBody = document.querySelector('#classTable tbody');
+        const studentClassSelect = document.getElementById('studentClass');
+        const classesRef = database.ref('classes');
+
+        classesRef.on('value', (snapshot) => {
+            classTableBody.innerHTML = '';
+            studentClassSelect.innerHTML = '<option value="">Select Class</option>';
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnapshot) => {
+                    const classData = childSnapshot.val();
+                    const classKey = childSnapshot.key;
+
+                    const row = `<tr><td>${classData.name}</td></tr>`;
+                    classTableBody.innerHTML += row;
+
+                    const option = document.createElement('option');
+                    option.value = classKey;
+                    option.textContent = classData.name;
+                    studentClassSelect.appendChild(option);
+                });
+            }
+        });
+    }
+
     function addSubject() {
-      const subjectName = document.getElementById('subjectName').value;
-      if (subjectName.trim() === '') return alert('Please enter a subject name');
-      subjects.push(subjectName);
-      localStorage.setItem('subjects', JSON.stringify(subjects));
-      document.getElementById('subjectName').value = '';
-      loadSubjects();
-      alert('Subject added successfully!');
+        const subjectNameInput = document.getElementById('subjectName');
+        const subjectName = subjectNameInput.value.trim();
+        if (subjectName) {
+            database.ref('subjects').push({
+                name: subjectName
+            });
+            subjectNameInput.value = '';
+        } else {
+            alert('Please enter a subject name.');
+        }
     }
 
-    // Add Student
+    function displaySubjects() {
+        const subjectTableBody = document.querySelector('#subjectTable tbody');
+        const subjectsRef = database.ref('subjects');
+
+        subjectsRef.on('value', (snapshot) => {
+            subjectTableBody.innerHTML = '';
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnapshot) => {
+                    const subjectData = childSnapshot.val();
+                    const row = `<tr><td>${subjectData.name}</td></tr>`;
+                    subjectTableBody.innerHTML += row;
+                });
+            }
+        });
+    }
+
     function addStudent() {
-      const studentName = document.getElementById('studentName').value;
-      const studentClass = document.getElementById('studentClass').value;
-      if (studentName.trim() === '' || studentClass.trim() === '') return alert('Please fill out all fields');
+        const studentNameInput = document.getElementById('studentName');
+        const studentClassSelect = document.getElementById('studentClass');
+        const studentName = studentNameInput.value.trim();
+        const classId = studentClassSelect.value;
+        const className = studentClassSelect.options[studentClassSelect.selectedIndex].text;
 
-      students.push({ name: studentName, class: studentClass });
-      localStorage.setItem('students', JSON.stringify(students));
-      document.getElementById('studentName').value = '';
-      loadStudents();
-      alert('Student added successfully!');
+        if (studentName && classId) {
+            database.ref('students').push({
+                name: studentName,
+                classId: classId,
+                className: className 
+            });
+            studentNameInput.value = '';
+            studentClassSelect.value = '';
+        } else {
+            alert('Please enter a student name and select a class.');
+        }
     }
 
-    // Load Classes into dropdown and table
-    function loadClasses() {
-      const tbody = document.getElementById('classTable').querySelector('tbody');
-      tbody.innerHTML = '';
-      const dropdown = document.getElementById('studentClass');
-      dropdown.innerHTML = '<option value="">Select Class</option>';
+    function displayStudents() {
+        const studentTableBody = document.querySelector('#studentTable tbody');
+        const studentsRef = database.ref('students');
 
-      classes.forEach(cls => {
-        const row = `<tr><td>${cls}</td></tr>`;
-        tbody.innerHTML += row;
-        dropdown.innerHTML += `<option value="${cls}">${cls}</option>`;
-      });
+        studentsRef.on('value', (snapshot) => {
+            studentTableBody.innerHTML = '';
+            if (snapshot.exists()) {
+                snapshot.forEach((studentChildSnapshot) => {
+                    const studentData = studentChildSnapshot.val();
+                    const row = `<tr>
+                                    <td>${studentData.name}</td>
+                                    <td>${studentData.className}</td>
+                                 </tr>`;
+                    studentTableBody.innerHTML += row;
+                });
+            }
+        });
     }
 
-    // Load Subjects
-    function loadSubjects() {
-      const tbody = document.getElementById('subjectTable').querySelector('tbody');
-      tbody.innerHTML = '';
-      subjects.forEach(sub => {
-        const row = `<tr><td>${sub}</td></tr>`;
-        tbody.innerHTML += row;
-      });
-    }
-
-    // Load Students
-    function loadStudents() {
-      const tbody = document.getElementById('studentTable').querySelector('tbody');
-      tbody.innerHTML = '';
-      students.forEach(stud => {
-        const row = `<tr><td>${stud.name}</td><td>${stud.class}</td></tr>`;
-        tbody.innerHTML += row;
-      });
-    }
-
-    // Initialize Data
-    loadClasses();
-    loadSubjects();
-    loadStudents();
+    window.onload = function() {
+        displayClasses();
+        displaySubjects();
+        displayStudents();
+        showSection('subjects');
+    };
   </script>
 </body>
 </html>
